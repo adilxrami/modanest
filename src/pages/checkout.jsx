@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 
@@ -12,6 +12,35 @@ export default function Checkout() {
     email: "",
     paymentMethod: "creditCard",
   });
+
+  // Get location on component mount
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+
+          try {
+            // Reverse geocode using Nominatim (free & no API key)
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+            );
+            const data = await res.json();
+
+            const fullAddress = data.display_name || "";
+            setFormData((prev) => ({ ...prev, address: fullAddress }));
+          } catch (err) {
+            console.error("Error getting location:", err);
+          }
+        },
+        (error) => {
+          console.warn("Location access denied:", error);
+        }
+      );
+    } else {
+      console.warn("Geolocation not supported by this browser.");
+    }
+  }, []);
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
